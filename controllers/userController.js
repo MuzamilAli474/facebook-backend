@@ -13,7 +13,7 @@ const secretKey ="12345";
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false, // Set to true for port 465, false for other portss
+    secure: false, // Set to true for port 465, false for other ports
     auth: {
         user: 'muzamil.6aug24webgpt@gmail.com',  
         pass: 'cjcy cync rjsh srix' 
@@ -134,6 +134,7 @@ const sendotp =  async (req, res) => {
    };
 
 
+ 
 
 
 
