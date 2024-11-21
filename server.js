@@ -7,11 +7,11 @@ const path = require('path');
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const app = express();
-const port = 6000;
+const port = 5000;
 const mysecretkey = "Abc123";
 app.use(cors());
 app.use(express.json());
-function check(req, res, next) {
+function Authenticate(req, res, next) {
     const token = req.headers.token;
     if (!token) {
         return res.status(401).send("There is no token");
@@ -44,6 +44,8 @@ async function connection() {
     }
 }
 connection();
+
+// User Schema
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -73,6 +75,51 @@ const userSchema = new mongoose.Schema({
     },
 });
 const User = mongoose.model("User", userSchema);
+
+// Post Schema 
+
+const postSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true,
+    },
+    content: {
+        type: String,
+        required: true,
+    },
+    image: {
+        type: String, // Store the image path
+        required: false,
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User", // Reference to User model
+        required: true,
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+});
+
+const Post = mongoose.model("Post", postSchema);
+
+// Configure Multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "uploads/"); // Upload directory
+    },
+    filename: (req, file, cb) => {
+        const uniqueName = `${Date.now()}-${file.originalname}`;
+        cb(null, uniqueName);
+    },
+});
+
+const upload = multer({ storage });
+
+
+
+
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -83,28 +130,33 @@ const transporter = nodemailer.createTransport({
 app.post("/signup", async (req, res) => {
     const userData = req.body;
     try {
+        // Generate OTP
         const otp = generate4DigitOTP();
+        // Create new user with OTP
         const userdata = new User({
             ...userData,
             otp: otp,
         });
         await userdata.save();
+        // Set up email options
         const mailOptions = {
             from: 'infoaliraza22@gmail.com',
             to: userData.email,
             subject: 'OTP Verification',
             text: `Hello ${userData.name},\n\nYour OTP for account verification is: ${otp}\n\nPlease use this to verify your account.\n\nBest regards.`
         };
+        // Send OTP email
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 console.error("Error sending OTP:", error);
-                return res.status(500).send("Error sending OTP: " + error.message);
+                return res.status(500).json({ message: "Error sending OTP: " + error.message });
             }
-            res.status(200).send("Signup successful! Please verify your OTP.");
+            // Send success response
+            res.status(200).json({ message: "Signup successful! Please verify your OTP." });
         });
     } catch (error) {
         console.error("Error during signup:", error);
-        res.status(400).send("Error during signup: " + error.message);
+        res.status(400).json({ message: "Error during signup: " + error.message });
     }
 });
 app.post("/verifyotp", async (req, res) => {
@@ -112,15 +164,15 @@ app.post("/verifyotp", async (req, res) => {
     try {
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).send("User not found.");
+            return res.status(404).json("User not found.");
         }
         if (user.otp === otp) {
             user.otpVerified = true;
             user.otp = undefined;
             await user.save();
-            res.status(200).send("OTP verified successfully. Account is now active.");
+            res.status(200).json("OTP verified successfully. Account is now active.");
         } else {
-            res.status(400).send("Invalid OTP. Please try again.");
+            res.status(400).json("Invalid OTP. Please try again.");
         }
     } catch (error) {
         console.error("Error verifying OTP:", error);
@@ -152,7 +204,7 @@ app.post("/forgetpassword", async (req, res) => {
     try {
         let user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).send("User not found");
+            return res.status(404).json("User not found");
         }
         const otp = generate4DigitOTP();
         user.otp = otp;
@@ -166,13 +218,13 @@ app.post("/forgetpassword", async (req, res) => {
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 console.error("Error sending OTP:", error);
-                return res.status(500).send("Error sending OTP: " + error.message);
+                return res.status(500).json("Error sending OTP: " + error.message);
             }
-            res.status(200).send("OTP sent successfully. Please verify your OTP.");
+            res.status(200).json("OTP sent successfully. Please verify your OTP.");
         });
     } catch (error) {
         console.error("Error during password reset:", error);
-        res.status(400).send("Error during password reset: " + error.message);
+        res.status(400).json("Error during password reset: " + error.message);
     }
 });
 app.post("/verifyotp/newpassword", async (req, res) => {
@@ -180,13 +232,13 @@ app.post("/verifyotp/newpassword", async (req, res) => {
     try {
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).send("User not found.");
+            return res.status(404).json("User not found.");
         }
         if (user.otp === otp) {
             user.otp = undefined;
             user.password = newpassword;
             await user.save();
-            res.status(200).send("OTP verified successfully. Password is Changed.");
+            res.status(200).json("OTP verified successfully. Password is Changed.");
         } else {
             res.status(400).send("Invalid OTP. Please try again.");
         }
@@ -195,6 +247,128 @@ app.post("/verifyotp/newpassword", async (req, res) => {
         res.status(500).send("Error verifying OTP: " + error.message);
     }
 });
+
+
+
+// Create Post API
+app.post("/create-post", Authenticate, upload.single("image"), async (req, res) => {
+    const { title, content } = req.body;
+
+    try {
+        // Validate input
+        if (!title || !content) {
+            return res.status(400).json("Title and content are required.");
+        }
+
+        // Create post
+        const post = new Post({
+            title,
+            content,
+            image: req.file ? req.file.path : null, // Save file path if uploaded
+            user: req.user.id, // Add user reference from token
+        });
+
+        await post.save();
+        res.status(201).json({
+            message: "Post created successfully.",
+            post,
+        });
+    } catch (error) {
+        console.error("Error creating post:", error);
+        res.status(500).json("Error creating post: " + error.message);
+    }
+});
+
+// Serve Static Files (For Uploaded Images)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
+// postSchema add  a field like 
+postSchema.add({
+    likes: {
+        type: Number,
+        default: 0, // Initialize with 0 likes
+    },
+});
+
+
+// timeline api 
+app.get("/timeline", Authenticate, async (req, res) => {
+    try {
+        const posts = await Post.find()
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error("Error fetching timeline:", error);
+        res.status(500).json("Error fetching timeline: " + error.message);
+    }
+});
+
+// profile posts
+app.get("/profile", Authenticate, async (req, res) => {
+    try {
+        const posts = await Post.find({ user: req.user.id })
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error("Error fetching user posts:", error);
+        res.status(500).json("Error fetching user posts: " + error.message);
+    }
+});
+
+
+
+// update post
+app.put("/profile/edit/:id", Authenticate, multer({ dest: "uploads/" }).single("image"), async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const { title, content } = req.body;
+
+        // Find post by ID and check if it belongs to the logged-in user
+        const post = await Post.findOne({ _id: postId, user: req.user.id });
+
+        if (!post) {
+            return res.status(404).json("Post not found or you are not authorized to edit this post.");
+        }
+
+        // Update post fields
+        post.title = title || post.title;
+        post.content = content || post.content;
+
+        if (req.file) {
+            post.image = req.file.path; // Update image if provided
+        }
+
+        await post.save();
+        res.status(200).json({ message: "Post updated successfully.", post });
+    } catch (error) {
+        console.error("Error updating post:", error);
+        res.status(500).json("Error updating post: " + error.message);
+    }
+});
+
+// delete post
+app.delete("/profile/delete/:id", Authenticate, async (req, res) => {
+    try {
+        const postId = req.params.id;
+
+        // Find and delete post if it belongs to the logged-in user
+        const post = await Post.findOneAndDelete({ _id: postId, user: req.user.id });
+
+        if (!post) {
+            return res.status(404).json("Post not found or you are not authorized to delete this post.");
+        }
+
+        res.status(200).json({ message: "Post deleted successfully." });
+    } catch (error) {
+        console.error("Error deleting post:", error);
+        res.status(500).json("Error deleting post: " + error.message);
+    }
+});
+
+
+
+
+
+
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
