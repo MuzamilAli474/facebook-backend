@@ -89,7 +89,7 @@ const postsFOrtimeline = async( req , res )=>{
           });
         }
     
-        const posts = await Post.find({userId: { $ne: userId } });
+        const posts = await Post.find();
         if (posts.length === 0) {
             return res.status(404).json({
               message: "Post not found"
