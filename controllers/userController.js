@@ -134,6 +134,67 @@ const sendotp =  async (req, res) => {
    };
 
 
+
+
+
+   const updatepassword= async (req, res )=>{
+   
+    try {
+
+        const userID = req.params.userID;
+        const {newpassword} = req.body;
+         const { oldpassword } = req.body;
+        //  console.log(userID);
+        //  console.log(newpassword);
+        //  console.log(oldpassword);
+        const studentIdbyauth =  req.userId;
+        // console.log(studentIdbyauth)
+        const  user = await User.findById(userID);
+        if(!user){
+            return res.status(404).json({
+                message:"User Not Found ! that you want to aupdate Password"
+            })
+        }
+
+        if(user._id.toString() !== studentIdbyauth){
+            return  res.status(403).json({
+        
+                message :" You are not authorized to Update  Password ."
+            })
+        }
+        if(user.password !== req.body.oldpassword ){
+            return  res.status(403).json({
+        
+                message :"  please check your oldPassword and try again ."
+            })
+        
+         }else{
+
+            const updatePass = await User.findByIdAndUpdate(userID,{password:newpassword,new:true})
+        
+            
+            return  res.status(200).json({
+                updatePass,
+                message :"your password is Updated successfully! "
+            })
+        
+        
+         }
+
+        
+    } catch (error) {
+        return res.status(500).json({
+            message: "Internal server error!"
+        });
+    }
+   
+   
+   
+   
+   }
+
+
+
  
 
 
@@ -143,4 +204,4 @@ const sendotp =  async (req, res) => {
 
 
 
-module.exports ={singUp,sendotp,login}
+module.exports ={singUp,sendotp,login,updatepassword}

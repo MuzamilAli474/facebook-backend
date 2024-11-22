@@ -1,8 +1,8 @@
 const express = require('express');
 
 const router = express.Router();
-
-const {singUp,sendotp,login} =require('../controllers/userController.js');
+ const auth = require('../middlewares/auth.js')
+const {singUp,sendotp,login,updatepassword} =require('../controllers/userController.js');
 
 
 router.post('/singUp',singUp)
@@ -12,7 +12,7 @@ router.post('/sendotp',sendotp)
 router.post('/login',login)
 
 
-
+router.patch('/updatepassword/:userID',auth,updatepassword)
 
 
 

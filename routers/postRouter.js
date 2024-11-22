@@ -5,7 +5,7 @@ const router = express.Router();
 const  auth = require('../middlewares/auth');
   
 
- const {createPost,uploads,viewPost,postsFOrtimeline,updatePost,deletePost}  = require('../controllers/postController');
+ const {createPost,uploads,viewPost,postsFOrtimeline,updatePost,deletePost,addComment}  = require('../controllers/postController');
  
  router.post('/createPost',auth,uploads.single('photo'),createPost)
   
@@ -20,6 +20,7 @@ const  auth = require('../middlewares/auth');
 
  router.delete('/deletePost/:postId',auth,deletePost)
 
+ router.post('/addComment/:postId',auth,addComment)
 
 
 

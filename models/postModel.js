@@ -29,20 +29,25 @@ const postSchema = new mongoose.Schema({
         ref: 'User',
       }],
       comments : {
-        type : String,
+        type : Number,
         default : 0
       },
       commentedBy: [{
         userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true,
-          ref: 'User',
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            ref: 'User',
+        },
+        comment: {
+            type: String,  
+            required: true
         },
         createdAt: {
-          type: Date,
-          default: Date.now,
+            type: Date,
+            default: Date.now,
         },
-      }],
+    }],
+    
       createdAt: {
         type: Date,
         default: Date.now,
