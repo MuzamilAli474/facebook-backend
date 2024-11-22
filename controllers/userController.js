@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require("nodemailer");
 const router = require('../routers/userRouter.js');
-
+const {generateRandomPassword,sendEmail} = require('../middlewares/mailer.js')
 
 const secretKey ="12345";
 
@@ -197,6 +197,31 @@ const sendotp =  async (req, res) => {
 
  
 
+const forgotpassword = async (req, res) => {
+ 
+  try {
+    const {email} = req.body;
+
+
+ const user = await User.findOne({email})   
+if(!user){
+    return res.status(404).json({
+        message:"No user found with this email!"
+    })
+}else if(user){
+  const generateRandomPasswords =   generateRandomPassword(10)
+//   console.log("Generating random passwords: " + generateRandomPasswords)
+    await User.findByIdAndUpdate(user._id, { password: generateRandomPasswords });
+    sendEmail(email, `Your new password is: ${generateRandomPasswords}`);
+    return res.status(200).json({
+        message: "Password reset email sent successfully!"
+    });  } 
+}catch (error) {
+    return res.status(500).json({
+        message: "Error resetting password!"
+    });
+  }
+}
 
 
 
@@ -204,4 +229,6 @@ const sendotp =  async (req, res) => {
 
 
 
-module.exports ={singUp,sendotp,login,updatepassword}
+
+
+module.exports ={singUp,sendotp,login,updatepassword,forgotpassword}
