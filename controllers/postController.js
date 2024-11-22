@@ -216,8 +216,49 @@ const addComment = async (req, res) => {
     }
 };
 
+// like by login user i want to dislike if usr already like this post
+const likePost = async (req, res) => {
+try {
+    const userId= req.userId;
+    if(!userId) {
+       return res.status(401).json({ message: 'User not logged in' });
+    }
+     postId = req.params.postId;
+   
+   
+     const post = await Post.findById(postId); 
+     if(!post) {    
+ return res.status(404).json({ message: 'Post not found' });
+     }
+
+     if(post.likedby.includes(userId)){
+        post.likes -= 1;   
+        post.likedby.remove(userId);   
+        await post.save();
+        return res.status(200).json({ message: 'Post disliked successfully!', post });
+
+
+ 
+
+     }else{
+        post.likes += 1;   
+        post.likedby.push(userId);   
+        await post.save();
+        return res.status(200).json({ message: 'Post liked successfully!', post });
+     }
+
+ 
+
+
+     
+   //   console.log(post); 
+   
+   
+} catch (error) {
+    return res.status(500).json({ message:'internal  server error', error});
+}
+}
 
 
 
-
-module.exports ={createPost,uploads,viewPost,postsFOrtimeline,updatePost,deletePost,addComment}
+module.exports ={createPost,uploads,viewPost,postsFOrtimeline,updatePost,deletePost,addComment,likePost}
