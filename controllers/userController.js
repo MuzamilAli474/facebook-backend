@@ -25,6 +25,7 @@ const transporter = nodemailer.createTransport({
 function generateOTP() {
     return crypto.randomInt(100000, 999999).toString();  
 }
+//send otp for registration
 const sendotp =  async (req, res) => {
     const { email } = req.body;
   
@@ -49,6 +50,7 @@ const sendotp =  async (req, res) => {
 
 };
 
+// user registration process
  const singUp = async(req ,res )=>{
   
     console.log(req.body)
@@ -93,13 +95,15 @@ const sendotp =  async (req, res) => {
 
 
 
-
+// usr login 
  const login = async (req, res)=>{
     try {
        const {email,password} = req.body;
        // console.log(req.body)
      const userData = await User.findOne({ email , password })
-   //   console.log(userData)
+    //  console.log(userData)
+    
+    
     if(!userData){
        return res.status(400).json({
            message:"No data found!"
@@ -136,7 +140,7 @@ const sendotp =  async (req, res) => {
 
 
 
-
+//LOGIN  USER UPDATE PASSWORD 
    const updatepassword= async (req, res )=>{
    
     try {
@@ -196,7 +200,7 @@ const sendotp =  async (req, res) => {
 
 
  
-
+// FORGETPASSWORD  MY EMAIL 
 const forgotpassword = async (req, res) => {
  
   try {

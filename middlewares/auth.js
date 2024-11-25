@@ -25,7 +25,10 @@ const authenticate = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, secretKey);
         req.userId = decoded.id;
-    
+        req.name=decoded.name;
+          
+        
+        
         // console.log(req.userId)
 
         next(); 

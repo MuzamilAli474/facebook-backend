@@ -2,14 +2,14 @@
 const mongoose = require('mongoose');
 
 const jwt = require('jsonwebtoken');
-
+const User = require('../models/userModel.js');
 const secretKey ="12345";
 const multer = require ('multer');
 const fs = require('fs');
 const path = require ('path');
 const Post = require('../models/postModel');
 
-const dir = './uploads/psotPhoto';
+const dir = './uploads';
  if (!fs.existsSync(dir)) {
      fs.mkdirSync(dir);
  }
@@ -28,7 +28,7 @@ const dir = './uploads/psotPhoto';
  const uploads = multer({ storage: storage });
 
 
-
+// create a new post 
 const createPost =  async( req, res )=>{
 try {
     const userId = req.userId;
@@ -105,7 +105,7 @@ const postsFOrtimeline = async( req , res )=>{
 
 
 }
-
+//update  a post
 const updatePost = async ( req , res )=>{
     
         const postId = req.params.postId;
@@ -149,7 +149,7 @@ const updatePost = async ( req , res )=>{
         }
 }
 
-
+//delete a post
 const deletePost = async (req, res)=>{
     const {postId}  = req.params;
   console.log(postId)
@@ -179,6 +179,12 @@ const addComment = async (req, res) => {
         const postId = req.params.postId;   
         const { commentContent } = req.body;  
         const userId = req.userId;   
+        
+        // console.log(username)
+        
+        const username = await  User.findById(userId); 
+         const name = username.name
+
 
         // console.log(postId, commentContent, userId);
  
@@ -187,7 +193,7 @@ const addComment = async (req, res) => {
         }
  
         const post = await Post.findById(postId);
-        console.log(post);
+        // console.log(post);
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });
         }
@@ -208,6 +214,7 @@ const addComment = async (req, res) => {
         return res.status(200).json({
             message: 'Comment added successfully!',
             post,
+            name
         });
 
     } catch (error) {
@@ -216,7 +223,7 @@ const addComment = async (req, res) => {
     }
 };
 
-// like by login user i want to dislike if usr already like this post
+// like by login user and dislike if usr already like this post
 const likePost = async (req, res) => {
 try {
     const userId= req.userId;
